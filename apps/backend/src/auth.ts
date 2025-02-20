@@ -14,18 +14,17 @@ dotenv.config();
 
 const JWT_KEY = process.env.JWT_SECRET || "";
 
+const authSchema = z.object({
+  email: z.string().email("Invalid Email"),
+  password: z.string().min(6, "Password Must Be At Least 6 Characters"),
+});
+
 const route = auth.post(
   "/signup",
-  zValidator(
-    "form",
-    z.object({
-      email: z.string(),
-      password: z.string(),
-    })
-  ),
+  zValidator("form", authSchema),
   async (c) => {
     try {
-      const { email, password } = await c.req.json();
+      const { email, password } = await c.req.valid("form");
       const existingUser = await User.findOne({ email });
       if (existingUser) {
         return c.json({ error: "This Email Already In Use" }, 400);
@@ -36,6 +35,7 @@ const route = auth.post(
 
       return c.json({ message: "User Created Succesfully" });
     } catch (error) {
+      console.error(error);
       return c.json({ error: "Server Error" }, 500);
     }
   }
@@ -46,7 +46,7 @@ auth.post(
   zValidator("form", z.object({ email: z.string(), password: z.string() })),
   async (c) => {
     try {
-      const { email, password } = await c.req.json();
+      const { email, password } = await c.req.valid("form");
       const user = await User.findOne({ email });
       if (!user) {
         return c.json({ error: "Wrong Email or Password" }, 401);
@@ -64,6 +64,7 @@ auth.post(
       );
       return c.json({ token });
     } catch (error) {
+      console.error(error);
       return c.json({ error: "Internal Server Error" }, 500);
     }
   }
