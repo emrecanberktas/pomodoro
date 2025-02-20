@@ -2,15 +2,28 @@
   "name": "pomodoro",
   "version": "1.0.0",
   "description": "",
+  "private": true,
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "pnpm -r dev",
+    "build": "pnpm -r build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "workspaces": [
-    "PomodoroBackend",
-    "PomodoroFrontend"
-  ]
+    "apps/*",
+    "packages/*"
+  ],
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@swc/core",
+      "bcrypt",
+      "esbuild"
+    ],
+    "onlyBuiltDependencies": [
+      "bcrypt"
+    ]
+  }
 }
