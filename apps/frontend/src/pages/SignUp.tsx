@@ -3,19 +3,19 @@ import { useAuth } from "../util/useAuth";
 import { useAuthStore } from "../store/authStore";
 import { useNavigate } from "react-router-dom";
 
-export const Login = () => {
+function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { loginMutation } = useAuth();
+  const { signupMutation } = useAuth();
   const { token } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    loginMutation.mutate(
+  const handleSignUp = () => {
+    signupMutation.mutate(
       { email, password },
       {
         onSuccess: () => {
-          navigate("/dashboard");
+          navigate("/login");
         },
       }
     );
@@ -24,31 +24,37 @@ export const Login = () => {
   return (
     <div>
       {token ? (
-        <p>Login Success!</p>
+        <p>You Are Already Logged In</p>
       ) : (
         <>
-          <h1>Login</h1>
+          <h1>Sign Up</h1>
           <input
+            type="email"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
           />
           <input
             type="password"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Şifre"
           />
-          <button onClick={handleLogin} disabled={loginMutation.isPending}>
-            {loginMutation.isPending ? "Logging In" : "Login"}
+          <button onClick={handleSignUp} disabled={signupMutation.isPending}>
+            {signupMutation.isPending ? "Signing Up..." : "Sign Up"}
           </button>
-          {loginMutation.isError && (
+          {signupMutation.isError && (
             <p style={{ color: "red" }}>
-              Giriş başarısız: {loginMutation.error?.message}
+              Sign Up Failed: {signupMutation.error?.message}
             </p>
+          )}
+          {signupMutation.isSuccess && (
+            <p style={{ color: "green" }}>Sign Up Successful!</p>
           )}
         </>
       )}
     </div>
   );
-};
+}
+
+export default SignUp;
