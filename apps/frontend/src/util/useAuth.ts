@@ -6,6 +6,13 @@ interface AuthPayload {
   password: string;
 }
 
+// const API_URL = import.meta.env.VITE_BASE_API;
+const API_URL = "http://localhost:3000";
+
+if (!API_URL) {
+  console.error("VITE_BASE_API is not defined in .env");
+}
+
 const api = async (url: string, data: AuthPayload) => {
   const formData = new FormData();
   formData.append("email", data.email);
@@ -16,8 +23,11 @@ const api = async (url: string, data: AuthPayload) => {
     body: formData,
   });
 
+  console.log(`Fetching URL: ${url}`);
+
   if (!response.ok) {
-    throw new Error("Network response was not ok");
+    const errorText = await response.text();
+    throw new Error(`Network response was not ok: ${errorText}`);
   }
 
   return response.json();
@@ -27,10 +37,10 @@ export const useAuth = () => {
   const setToken = useAuthStore((state) => state.setToken);
 
   const loginMutation = useMutation({
-    mutationFn: (data: AuthPayload) => api("/api/auth/login", data),
+    mutationFn: (data: AuthPayload) => api(`${API_URL}/login`, data),
     onSuccess: (data) => {
-      setToken(data.token); // Token'ı store'a kaydet
-      localStorage.setItem("token", data.token); // Token'ı localStorage'a kaydet
+      setToken(data.token);
+      localStorage.setItem("token", data.token);
     },
     onError: (error) => {
       console.error("Login error:", error);
@@ -38,9 +48,8 @@ export const useAuth = () => {
   });
 
   const signupMutation = useMutation({
-    mutationFn: (data: AuthPayload) => api("/api/auth/signup", data),
+    mutationFn: (data: AuthPayload) => api(`${API_URL}/signup`, data),
     onSuccess: () => {
-      // Signup başarılıysa login sayfasına yönlendirebiliriz
       console.log("Signup successful");
     },
     onError: (error) => {
