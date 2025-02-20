@@ -1,37 +1,50 @@
 import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 
-const API_URL = "http://localhost:3000/auth";
+interface AuthPayload {
+  email: string;
+  password: string;
+}
+
+const api = async (url: string, data: AuthPayload) => {
+  const formData = new FormData();
+  formData.append("email", data.email);
+  formData.append("password", data.password);
+
+  const response = await fetch(url, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error("Network response was not ok");
+  }
+
+  return response.json();
+};
 
 export const useAuth = () => {
-  const { setToken } = useAuthStore();
+  const setToken = useAuthStore((state) => state.setToken);
 
   const loginMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string }) => {
-      const res = await fetch(`${API_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!res.ok) throw new Error("Giriş başarısız!");
-      return res.json();
-    },
+    mutationFn: (data: AuthPayload) => api("/api/auth/login", data),
     onSuccess: (data) => {
-      setToken(data.token);
+      setToken(data.token); // Token'ı store'a kaydet
+      localStorage.setItem("token", data.token); // Token'ı localStorage'a kaydet
+    },
+    onError: (error) => {
+      console.error("Login error:", error);
     },
   });
 
   const signupMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string }) => {
-      const res = await fetch(`${API_URL}/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!res.ok) throw new Error("Kayıt başarısız!");
-      return res.json();
+    mutationFn: (data: AuthPayload) => api("/api/auth/signup", data),
+    onSuccess: () => {
+      // Signup başarılıysa login sayfasına yönlendirebiliriz
+      console.log("Signup successful");
+    },
+    onError: (error) => {
+      console.error("Signup error:", error);
     },
   });
 
