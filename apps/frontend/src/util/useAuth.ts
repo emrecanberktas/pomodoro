@@ -7,7 +7,7 @@ interface AuthPayload {
 }
 
 // const API_URL = import.meta.env.VITE_BASE_API;
-const API_URL = "http://localhost:3000";
+const API_URL = "http://localhost:3000/auth";
 
 if (!API_URL) {
   console.error("VITE_BASE_API is not defined in .env");
