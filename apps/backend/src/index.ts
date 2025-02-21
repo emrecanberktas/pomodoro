@@ -2,9 +2,18 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { connectDB } from "./db.js";
 import auth from "./auth.js";
+import { cors } from "hono/cors";
 
 const app = new Hono();
 const port = 3000;
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    allowMethods: ["GET", "POST", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 app.get("/", (c) => {
   return c.text("Hello Hono!");
