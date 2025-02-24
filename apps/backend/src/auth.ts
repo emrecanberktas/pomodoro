@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { jwt } from "hono/jwt";
 import type { JwtVariables } from "hono/jwt";
+import { Pomodoro } from "./models/Pomodoro.js";
 import { User } from "./models/User.js";
 import bcrypt from "bcrypt";
 import { Jwt } from "hono/utils/jwt";
@@ -75,6 +76,53 @@ const jwtMiddleware = jwt({ secret: JWT_KEY, alg: "HS256" });
 auth.get("/protected", jwtMiddleware, async (c) => {
   const user = c.get("jwtPayload");
   return c.json({ message: "Succesfull Login" }, user);
+});
+
+auth.post(
+  "/pomodoro",
+  jwtMiddleware,
+  zValidator(
+    "json",
+    z.object({
+      workTime: z.number().optional(),
+      breakTime: z.number().optional(),
+    })
+  ),
+  async (c) => {
+    try {
+      const { userId } = c.get("jwtPayload");
+      const { workTime, breakTime } = c.req.valid("json");
+
+      const pomodoro = new Pomodoro({
+        userId,
+        workTime: workTime || 25 * 60,
+        breakTime: breakTime || 5 * 60,
+      });
+      await pomodoro.save();
+
+      return c.json({ message: "Pomodoro Created Succesfully", pomodoro }, 201);
+    } catch (error) {
+      console.error("Pomodoro Save Error", error);
+      return c.json({ error: "Internal Server Erorr" }, 500);
+    }
+  }
+);
+
+auth.get("/pomodoro", jwtMiddleware, async (c) => {
+  try {
+    const { userId } = c.get("jwtPayload");
+    const pomodoro = await Pomodoro.findOne({ userId }).sort({ createdAt: -1 });
+    if (!pomodoro) {
+      return c.json({ message: "Pomodoro Not Found" }, 404);
+    }
+    return c.json({
+      workTime: pomodoro.workTime,
+      breakTime: pomodoro.breakTime,
+    });
+  } catch (error) {
+    console.error("Pomodoro Fetch Error", error);
+    return c.json({ error: "Internal Server Error" }, 500);
+  }
 });
 
 export default auth;
