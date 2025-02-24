@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence, easeInOut, animate } from "motion/react";
 import { useAuthStore } from "../store/authStore";
+import clsx from "clsx";
 
 const WORK_TIME = 25 * 60; // 25 dakika (saniye cinsinden)
 const BREAK_TIME = 5 * 60; // 5 dakika (saniye cinsinden)
@@ -11,7 +12,6 @@ export default function Dashboard() {
   const [isActive, setIsActive] = useState(false);
   const [isWorkPhase, setIsWorkPhase] = useState(true);
 
-  // Sayaç mantığı
   useEffect(() => {
     let timer: number | undefined;
     if (isActive && timeLeft > 0) {
@@ -19,10 +19,12 @@ export default function Dashboard() {
         setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0) {
-      // Faz geçişi
       setIsWorkPhase((prev) => !prev);
       setTimeLeft(isWorkPhase ? BREAK_TIME : WORK_TIME);
       setIsActive(false);
+      // TODO : Ses dosyası seçilecek ve başlama ve bitişte farklı sesler çalınacak
+      const audio = new Audio("/notification.mp3");
+      audio.play();
     }
     return () => clearInterval(timer);
   }, [isActive, timeLeft, isWorkPhase]);
@@ -51,38 +53,28 @@ export default function Dashboard() {
 
   return (
     <div style={{ textAlign: "center", padding: "20px" }}>
-      <h1>Hoş Geldiniz!</h1>
-      <p>{isWorkPhase ? "Çalışma Zamanı" : "Mola Zamanı"}</p>
+      <p>{isWorkPhase ? "Work Time" : "Break Time"}</p>
 
-      {/* Animasyonlu Pomodoro Sayaç */}
-      <motion.div
-        animate={{
-          scale: isActive ? [1, 1.05, 1] : 1,
-          rotate: isActive ? [0, 2, -2, 0] : 0,
-        }}
-        transition={{
-          duration: 1,
-          repeat: isActive ? Infinity : 0,
-          ease: "easeInOut",
-        }}
-        style={{
-          width: "200px",
-          height: "200px",
-          borderRadius: "50%",
-          backgroundColor: isWorkPhase ? "#ff6347" : "#32cd32",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          margin: "20px auto",
-          color: "white",
-          fontSize: "2rem",
-          fontWeight: "bold",
-        }}
+      <div
+        className={clsx(
+          "w-[200px] h-[200px] rounded-full flex items-center justify-center mx-auto overflow-hidden",
+          isWorkPhase ? "bg-[#ff6347]" : "bg-[#32cd32]"
+        )}
       >
-        {formatTime(timeLeft)}
-      </motion.div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={timeLeft}
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -10, opacity: 0 }}
+            transition={{ ease: "easeInOut" }}
+            className="text-2xl font-bold color-white"
+          >
+            {formatTime(timeLeft)}
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
-      {/* Kontrol Butonları */}
       <div>
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -98,7 +90,7 @@ export default function Dashboard() {
             cursor: "pointer",
           }}
         >
-          {isActive ? "Durdur" : "Başlat"}
+          {isActive ? "Stop" : "Start"}
         </motion.button>
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -118,7 +110,6 @@ export default function Dashboard() {
         </motion.button>
       </div>
 
-      {/* Çıkış Yap Butonu */}
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
