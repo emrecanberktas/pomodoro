@@ -1,9 +1,14 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../store/authStore";
 
 interface AuthPayload {
   email: string;
   password: string;
+}
+
+interface PomodoroPayload {
+  workTime?: number;
+  breakTime?: number;
 }
 
 // const API_URL = import.meta.env.VITE_BASE_API;
@@ -12,18 +17,20 @@ const API_URL = "http://localhost:3000/auth";
 if (!API_URL) {
   console.error("VITE_BASE_API is not defined in .env");
 }
-
-const api = async (url: string, data: AuthPayload) => {
-  const formData = new FormData();
-  formData.append("email", data.email);
-  formData.append("password", data.password);
-
+// TODO More type safety
+const api = async (url: string, data: any, method = "POST") => {
+  const token = localStorage.getItem("token");
   const response = await fetch(url, {
-    method: "POST",
-    body: formData,
+    method,
+    headers:
+      method === "GET"
+        ? { Authorization: `Bearer ${token}` }
+        : {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+    body: method !== "GET" ? JSON.stringify(data) : undefined,
   });
-
-  console.log(`Fetching URL: ${url}`);
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -42,20 +49,35 @@ export const useAuth = () => {
       setToken(data.token);
       localStorage.setItem("token", data.token);
     },
-    onError: (error) => {
-      console.error("Login error:", error);
+    onError: (error: Error) => {
+      console.error("Login Error:", error);
     },
   });
 
   const signupMutation = useMutation({
     mutationFn: (data: AuthPayload) => api(`${API_URL}/signup`, data),
     onSuccess: () => {
-      console.log("Signup successful");
+      console.log("Signup Successful");
     },
-    onError: (error) => {
-      console.error("Signup error:", error);
+    onError: (error: Error) => {
+      console.error("Signup Error:", error);
     },
   });
 
-  return { loginMutation, signupMutation };
+  const savePomodoroMutation = useMutation({
+    mutationFn: (data: PomodoroPayload) => api(`${API_URL}/pomodoro`, data),
+    onSuccess: () => {
+      console.log("Pomodoro saved");
+    },
+    onError: (error: Error) => {
+      console.error("Pomodoro Save Error", error);
+    },
+  });
+
+  const pomodoroQuery = useQuery({
+    queryKey: ["pomodoro"],
+    queryFn: () => api(`${API_URL}/pomodoro`, {}, "GET"),
+  });
+
+  return { loginMutation, signupMutation, savePomodoroMutation, pomodoroQuery };
 };
