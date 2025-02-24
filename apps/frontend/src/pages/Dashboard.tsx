@@ -1,22 +1,30 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence, easeInOut, animate } from "motion/react";
+import { motion } from "motion/react";
 import { useAuthStore } from "../store/authStore";
 import clsx from "clsx";
+import Countdown from "@/components/Countdown";
+import { useAuth } from "@/util/useAuth";
 
-const WORK_TIME = 25 * 60; // 25 dakika (saniye cinsinden)
+const WORK_TIME = 0.5 * 60; // 25 dakika (saniye cinsinden)
 const BREAK_TIME = 5 * 60; // 5 dakika (saniye cinsinden)
 
 export default function Dashboard() {
   const { clearToken } = useAuthStore();
-  const [timeLeft, setTimeLeft] = useState(WORK_TIME);
+  const { savePomodoroMutation, pomodoroQuery } = useAuth();
+  const [timeLeft, setTimeLeft] = useState(
+    pomodoroQuery.data?.workTime || 25 * 60
+  );
   const [isActive, setIsActive] = useState(false);
   const [isWorkPhase, setIsWorkPhase] = useState(true);
+
+  const WORK_TIME = pomodoroQuery.data?.workTime || 25 * 60;
+  const BREAK_TIME = pomodoroQuery.data?.breakTime || 5 * 60;
 
   useEffect(() => {
     let timer: number | undefined;
     if (isActive && timeLeft > 0) {
       timer = window.setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
+        setTimeLeft((prev: number) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0) {
       setIsWorkPhase((prev) => !prev);
@@ -25,27 +33,27 @@ export default function Dashboard() {
       // TODO : Ses dosyası seçilecek ve başlama ve bitişte farklı sesler çalınacak
       const audio = new Audio("/notification.mp3");
       audio.play();
+      savePomodoroMutation.mutate({
+        workTime: WORK_TIME,
+        breakTime: BREAK_TIME,
+      });
     }
     return () => clearInterval(timer);
-  }, [isActive, timeLeft, isWorkPhase]);
+  }, [
+    isActive,
+    timeLeft,
+    isWorkPhase,
+    WORK_TIME,
+    BREAK_TIME,
+    savePomodoroMutation,
+  ]);
 
-  // Süreyi dakika:saniye formatına çevir
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  // Başlat/Durdur ve Sıfırla fonksiyonları
   const toggleTimer = () => setIsActive((prev) => !prev);
   const resetTimer = () => {
     setIsActive(false);
     setTimeLeft(isWorkPhase ? WORK_TIME : BREAK_TIME);
   };
 
-  // Çıkış yapma
   const handleLogout = () => {
     clearToken();
     localStorage.removeItem("token");
@@ -54,27 +62,14 @@ export default function Dashboard() {
   return (
     <div style={{ textAlign: "center", padding: "20px" }}>
       <p>{isWorkPhase ? "Work Time" : "Break Time"}</p>
-
       <div
         className={clsx(
           "w-[200px] h-[200px] rounded-full flex items-center justify-center mx-auto overflow-hidden",
           isWorkPhase ? "bg-[#ff6347]" : "bg-[#32cd32]"
         )}
       >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={timeLeft}
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -10, opacity: 0 }}
-            transition={{ ease: "easeInOut" }}
-            className="text-2xl font-bold color-white"
-          >
-            {formatTime(timeLeft)}
-          </motion.div>
-        </AnimatePresence>
+        {Countdown({ seconds: timeLeft })}
       </div>
-
       <div>
         <motion.button
           whileHover={{ scale: 1.1 }}
@@ -106,10 +101,9 @@ export default function Dashboard() {
             cursor: "pointer",
           }}
         >
-          Sıfırla
+          Reset
         </motion.button>
       </div>
-
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
