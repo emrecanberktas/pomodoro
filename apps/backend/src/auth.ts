@@ -22,10 +22,11 @@ const authSchema = z.object({
 
 const route = auth.post(
   "/signup",
-  zValidator("form", authSchema),
+  zValidator("json", authSchema),
   async (c) => {
     try {
-      const { email, password } = await c.req.valid("form");
+      const { email, password } = await c.req.valid("json");
+      console.log("Received", email, password);
       const existingUser = await User.findOne({ email });
       if (existingUser) {
         return c.json({ error: "This Email Already In Use" }, 400);
@@ -44,10 +45,10 @@ const route = auth.post(
 
 auth.post(
   "/login",
-  zValidator("form", z.object({ email: z.string(), password: z.string() })),
+  zValidator("json", z.object({ email: z.string(), password: z.string() })),
   async (c) => {
     try {
-      const { email, password } = await c.req.valid("form");
+      const { email, password } = await c.req.valid("json");
       const user = await User.findOne({ email });
       if (!user) {
         return c.json({ error: "Wrong Email or Password" }, 401);
