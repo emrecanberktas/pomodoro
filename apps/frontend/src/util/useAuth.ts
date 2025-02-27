@@ -22,13 +22,12 @@ const api = async (url: string, data: any, method = "POST") => {
   const token = localStorage.getItem("token");
   const response = await fetch(url, {
     method,
-    headers:
-      method === "GET"
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && method === "GET"
         ? { Authorization: `Bearer ${token}` }
-        : {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+        : {}),
+    },
     body: method !== "GET" ? JSON.stringify(data) : undefined,
   });
 
