@@ -3,7 +3,6 @@ import { AuthGuard } from "./components/AuthGuard";
 import { NonAuthGuard } from "./components/NonAuthGuard";
 import Dashboard from "./pages/Dashboard";
 import Auth from "@/pages/Auth";
-import SignUp from "./pages/SignUp";
 
 function App() {
   return (
