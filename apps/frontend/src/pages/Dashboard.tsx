@@ -128,13 +128,26 @@ export default function Dashboard() {
     localStorage.removeItem("token");
   };
 
+  // Calculate progress percentage (reversed for countdown effect)
+  const getProgress = () => {
+    const total = isWorkPhase ? WORK_TIME : BREAK_TIME;
+    // Return remaining percentage instead of completed percentage
+    return (timeLeft / total) * 100;
+  };
+
+  // Calculate circumference for SVG circle
+  const circleSize = 240;
+  const strokeWidth = 8;
+  const radius = (circleSize - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+
   return (
     <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center p-4">
-      <div className="w-full max-w-md relative">
+      <div className="relative w-full max-w-md">
         {/* Settings Button */}
         <button
           onClick={() => setShowSettings(true)}
-          className="absolute -top-12 right-0 text-gray-400 hover:text-white transition-colors"
+          className="absolute right-0 text-gray-400 transition-colors -top-12 hover:text-white"
         >
           <Settings size={20} />
         </button>
@@ -155,17 +168,50 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Timer Display */}
-          <div
-            className={clsx(
-              "relative w-48 h-48 mx-auto mb-8",
-              "rounded-full flex items-center justify-center",
-              "border-4",
-              isWorkPhase ? "border-blue-500/20" : "border-green-500/20"
-            )}
-          >
-            <div className="text-5xl font-light text-white">
-              {Countdown({ seconds: timeLeft })}
+          {/* Timer Circle with Progress */}
+          <div className="relative w-60 h-60 mx-auto mb-8">
+            {/* Background Circle */}
+            <svg
+              className="w-full h-full -rotate-90 transform"
+              viewBox={`0 0 ${circleSize} ${circleSize}`}
+            >
+              <circle
+                cx={circleSize / 2}
+                cy={circleSize / 2}
+                r={radius}
+                strokeWidth={strokeWidth}
+                className="fill-none stroke-[#333]"
+              />
+              <motion.circle
+                key={timeLeft}
+                cx={circleSize / 2}
+                cy={circleSize / 2}
+                r={radius}
+                strokeWidth={strokeWidth}
+                className={clsx(
+                  "fill-none",
+                  isWorkPhase ? "stroke-blue-500" : "stroke-green-500"
+                )}
+                style={{
+                  strokeDasharray: circumference,
+                  // Reverse the offset calculation for countdown effect
+                  strokeDashoffset: circumference * (1 - getProgress() / 100),
+                }}
+                initial={{ strokeDashoffset: circumference }}
+                animate={{
+                  strokeDashoffset: circumference * (1 - getProgress() / 100),
+                }}
+                transition={{ duration: 0.8, ease: "easeInOut" }}
+              />
+            </svg>
+
+            {/* Timer Text */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-5xl font-light text-white mb-1">
+                  {Countdown({ seconds: timeLeft })}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -214,13 +260,13 @@ export default function Dashboard() {
 
         {/* Settings Modal */}
         {showSettings && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="bg-[#242424] rounded-2xl p-6 w-full max-w-md mx-4">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-white">Settings</h2>
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-gray-400 transition-colors hover:text-white"
                 >
                   <X size={20} />
                 </button>
@@ -229,7 +275,7 @@ export default function Dashboard() {
               <div className="space-y-6">
                 {/* Work Time Setting */}
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">
+                  <label className="block mb-2 text-sm text-gray-400">
                     Work Duration (minutes)
                   </label>
                   <input
@@ -249,7 +295,7 @@ export default function Dashboard() {
 
                 {/* Break Time Setting */}
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">
+                  <label className="block mb-2 text-sm text-gray-400">
                     Break Duration (minutes)
                   </label>
                   <input
@@ -271,13 +317,13 @@ export default function Dashboard() {
                 <div className="flex justify-end gap-3 mt-8">
                   <button
                     onClick={() => setShowSettings(false)}
-                    className="px-4 py-2 rounded-lg text-gray-400 hover:text-white transition-colors"
+                    className="px-4 py-2 text-gray-400 transition-colors rounded-lg hover:text-white"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveSettings}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    className="px-4 py-2 text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
                   >
                     Save Changes
                   </button>
